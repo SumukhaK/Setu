@@ -185,6 +185,8 @@ func Build(events []Event, opt Options) Report {
 		}
 		return s
 	}
+	var firstTime, lastTime time.Time
+	var haveTime bool
 	for _, e := range events {
 		ts := str(e, "ts")
 		if t, err := time.Parse(time.RFC3339Nano, ts); err == nil {
@@ -194,12 +196,13 @@ func Build(events []Event, opt Options) Report {
 			if !opt.Until.IsZero() && t.After(opt.Until) {
 				continue
 			}
-		}
-		if r.FirstEvent == "" || ts < r.FirstEvent {
-			r.FirstEvent = ts
-		}
-		if ts > r.LastEvent {
-			r.LastEvent = ts
+			if !haveTime || t.Before(firstTime) {
+				firstTime, r.FirstEvent = t, ts
+			}
+			if !haveTime || t.After(lastTime) {
+				lastTime, r.LastEvent = t, ts
+			}
+			haveTime = true
 		}
 		r.Totals.Records++
 		if opt.IncludeEvents {
